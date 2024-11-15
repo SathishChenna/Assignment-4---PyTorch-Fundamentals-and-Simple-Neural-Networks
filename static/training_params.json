@@ -1,0 +1,1 @@
+{"model1": {"type": "simple", "learning_rate": 0.001, "batch_size": 512, "optimizer": "adam", "conv_params": {"conv1_channels": 16, "conv1_kernel": 3, "tensor_size": [32, 64]}}, "model2": {"type": "deep", "learning_rate": 0.001, "batch_size": 512, "optimizer": "sgd", "conv_params": {"conv1_channels": 8, "conv1_kernel": 3, "tensor_size": [8, 8]}}, "epochs": 2}

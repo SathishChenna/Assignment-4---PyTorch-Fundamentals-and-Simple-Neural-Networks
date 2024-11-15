@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>MNIST CNN Training Progress</title>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 20px;
+            height: calc(100vh - 100px);
+        }
+
+        .model-panel {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .model-config {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .model-metrics {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: auto;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .plot-container {
+            flex: 2;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: 100%;
+        }
+
+        .metric-value {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .model-title {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .metric-item {
+            margin-bottom: 10px;
+        }
+
+        #combined-plot {
+            height: calc(100% - 20px);
+        }
+    </style>
+</head>
+<body>
+    <h1 class="header">MNIST CNN Training Progress</h1>
+    
+    <div class="main-container">
+        <!-- Model 1 Panel -->
+        <div class="model-panel">
+            <div class="model-title">Model 1 Configuration</div>
+            <div class="model-config">
+                <div class="form-group">
+                    <label>Model Type:</label>
+                    <select id="model1-type">
+                        <option value="simple">Simple CNN</option>
+                        <option value="deep">Deep CNN</option>
+                        <option value="residual">Residual CNN</option>
+                    </select>
+                </div>
+                <div class="form-group conv-params" id="model1-conv-params">
+                    <label>Conv1 Channels:</label>
+                    <input type="number" id="model1-conv1-channels" value="16" min="1" max="128">
+                    
+                    <label>Tensor Size X:</label>
+                    <input type="number" id="model1-tensor-size-x" value="28" min="16" max="64">
+                    
+                    <label>Tensor Size Y:</label>
+                    <input type="number" id="model1-tensor-size-y" value="28" min="16" max="64">
+
+                    <label>Conv1 Kernel Size:</label>
+                    <input type="number" id="model1-conv1-kernel" value="3" min="1" max="7" step="2">                    
+                </div>
+                <div class="form-group">
+                    <label>Learning Rate:</label>
+                    <input type="number" id="model1-lr" value="0.001" step="0.0001">
+                </div>
+                <div class="form-group">
+                    <label>Batch Size:</label>
+                    <input type="number" id="model1-batch" value="512" step="32">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Optimizer:</label>
+                <select id="model1-optimizer">
+                    <option value="adam">Adam</option>
+                    <option value="sgd">SGD</option>
+                </select>
+            </div>
+            <div class="model-metrics">
+                <div class="metric-item">
+                    Training Accuracy: <span id="model1-train-acc" class="metric-value">-</span>
+                </div>
+                <div class="metric-item">
+                    Test Accuracy: <span id="model1-test-acc" class="metric-value">-</span>
+                </div>
+                <div class="metric-item">
+                    Loss: <span id="model1-loss" class="metric-value">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plot Container -->
+        <div class="plot-container">
+            <div id="combined-plot"></div>
+        </div>
+
+        <!-- Model 2 Panel -->
+        <div class="model-panel">
+            <div class="model-title">Model 2 Configuration</div>
+            <div class="model-config">
+                <div class="form-group">
+                    <label>Model Type:</label>
+                    <select id="model2-type">
+                        <option value="deep">Deep CNN</option>
+                        <option value="simple">Simple CNN</option>
+                        <option value="residual">Residual CNN</option>
+                    </select>
+                </div>
+                <div class="form-group conv-params" id="model2-conv-params">
+                    <label>Conv1 Channels:</label>
+                    <input type="number" id="model2-conv1-channels" value="16" min="1" max="128">
+                    
+                    <label>Tensor Size X:</label>
+                    <input type="number" id="model2-tensor-size-x" value="28" min="16" max="64">
+                    
+                    <label>Tensor Size Y:</label>
+                    <input type="number" id="model2-tensor-size-y" value="28" min="16" max="64">
+                    
+                    <label>Conv1 Kernel Size:</label>
+                    <input type="number" id="model2-conv1-kernel" value="3" min="1" max="7" step="2">
+                </div>
+                <div class="form-group">
+                    <label>Learning Rate:</label>
+                    <input type="number" id="model2-lr" value="0.001" step="0.0001">
+                </div>
+                <div class="form-group">
+                    <label>Batch Size:</label>
+                    <input type="number" id="model2-batch" value="512" step="32">
+                </div>
+                <div class="form-group">
+                    <label>Optimizer:</label>
+                    <select id="model2-optimizer">
+                        <option value="adam">Adam</option>
+                        <option value="sgd">SGD</option>
+                    </select>
+                </div>
+            </div>
+            <div class="model-metrics">
+                <div class="metric-item">
+                    Training Accuracy: <span id="model2-train-acc" class="metric-value">-</span>
+                </div>
+                <div class="metric-item">
+                    Test Accuracy: <span id="model2-test-acc" class="metric-value">-</span>
+                </div>
+                <div class="metric-item">
+                    Loss: <span id="model2-loss" class="metric-value">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div style="text-align: center; margin-top: 20px;">
+        <div style="display: inline-block;">
+            <label style="margin-right: 10px;">Epochs:</label>
+            <input type="number" id="epochs" value="5" min="1" max="50" style="width: 80px; margin-right: 20px;">
+            <button onclick="startTraining()" style="width: 200px;">Start Training</button>
+        </div>
+    </div>
+
+    <script>
+
+function startTraining() {
+    const params = {
+        model1: {
+            type: document.getElementById('model1-type').value,
+            learning_rate: parseFloat(document.getElementById('model1-lr').value),
+            batch_size: parseInt(document.getElementById('model1-batch').value),
+            optimizer: document.getElementById('model1-optimizer').value,
+            conv_params: {
+                conv1_channels: parseInt(document.getElementById('model1-conv1-channels').value),
+                conv1_kernel: parseInt(document.getElementById('model1-conv1-kernel').value),
+                tensor_size: [
+                    parseInt(document.getElementById('model1-tensor-size-x').value),
+                    parseInt(document.getElementById('model1-tensor-size-y').value)
+                ]
+            }
+        },
+        model2: {
+            type: document.getElementById('model2-type').value,
+            learning_rate: parseFloat(document.getElementById('model2-lr').value),
+            batch_size: parseInt(document.getElementById('model2-batch').value),
+            optimizer: document.getElementById('model2-optimizer').value,
+            conv_params: {
+                conv1_channels: parseInt(document.getElementById('model2-conv1-channels').value),
+                conv1_kernel: parseInt(document.getElementById('model2-conv1-kernel').value),
+                tensor_size: [
+                    parseInt(document.getElementById('model2-tensor-size-x').value),
+                    parseInt(document.getElementById('model2-tensor-size-y').value)
+                ]
+            }
+        },
+        epochs: parseInt(document.getElementById('epochs').value)
+    };
+
+    fetch('/start_training', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(params)
+    });
+}
+
+function updatePlots() {
+            fetch('/get_training_data')
+                .then(response => response.json())
+                .then(data => {
+                    const traces = [];
+                    
+                    // Model 1 traces
+                    if (data.model1) {
+                        const iterations1 = Array.from(
+                            {length: data.model1.losses.length},
+                            (_, i) => i
+                        );
+traces.push({
+    x: iterations1,
+    y: data.model1.losses,
+    name: 'Model 1 Loss',
+    type: 'scatter',
+    line: {
+        color: '#ffa533', 
+        width: 3,
+        shape: 'spline'
+    },
+    yaxis: 'y2'
+});
+traces.push({
+    x: iterations1,
+    y: data.model1.train_accuracies,
+    name: 'Model 1 Train Acc',
+    type: 'scatter',  // Changed to scatter
+    line: {
+        color: '#fff333', 
+        width: 3,
+        shape: 'spline'
+    },
+    yaxis: 'y'
+});
+traces.push({
+    x: iterations1,  // Use the same x-axis as training data
+    y: Array.from({length: iterations1.length}, (_, i) => {
+        // Interpolate test accuracy values
+        const epochIndex = Math.floor(i * data.model1.test_accuracies.length / iterations1.length);
+        return data.model1.test_accuracies[epochIndex];
+    }),
+    name: 'Model 1 Test Acc',
+    type: 'scatter',
+    line: {
+        color: '#90ff33', 
+        width: 3,
+        shape: 'spline'  // Makes the line smooth
+    },
+    yaxis: 'y'
+});
+                    }
+
+                    // Model 2 traces
+                    if (data.model2) {
+                        const iterations2 = Array.from(
+                            {length: data.model2.losses.length},
+                            (_, i) => i
+                        );
+traces.push({
+    x: iterations2,
+    y: data.model2.losses,
+    name: 'Model 2 Loss',
+    type: 'scatter',
+    line: {
+        color: '#ff3f33', 
+        width: 3,
+        shape: 'spline'
+    },
+    yaxis: 'y2'
+});
+traces.push({
+    x: iterations2,
+    y: data.model2.train_accuracies,
+    name: 'Model 2 Train Acc',
+    type: 'scatter',  // Changed to scatter
+    line: {
+        color: '#33ffd7', 
+        width: 3,
+        shape: 'spline'
+    },
+    yaxis: 'y'
+});
+traces.push({
+    x: iterations2,  // Use the same x-axis as training data
+    y: Array.from({length: iterations2.length}, (_, i) => {
+        // Interpolate test accuracy values
+        const epochIndex = Math.floor(i * data.model2.test_accuracies.length / iterations2.length);
+        return data.model2.test_accuracies[epochIndex];
+    }),
+    name: 'Model 2 Test Acc',
+    type: 'scatter',
+    line: {
+        color: '#3349ff', 
+        width: 3,
+        shape: 'spline'  // Makes the line smooth
+    },
+    yaxis: 'y'
+});
+         }
+
+         Plotly.newPlot('combined-plot', traces, {
+    title: {
+        text: 'Training Progress Comparison',
+        font: { size: 24 }
+    },
+    xaxis: {
+        title: 'Iteration',
+        domain: [0.1, 0.9],
+        titlefont: { size: 18 },
+        tickfont: { size: 14 }
+    },
+    yaxis: {
+        title: 'Accuracy (%)',
+        range: [0, 100],  // Changed from [90, 100] to [0, 100]
+        tickformat: '.1f',
+        dtick: 10,  // Changed from 1 to 10 for better spacing
+        side: 'left',
+        titlefont: { size: 18, color: '#2ca02c' },
+        tickfont: { size: 14, color: '#2ca02c' },
+        gridcolor: '#eee'
+    },
+    yaxis2: {
+        title: 'Loss',
+        overlaying: 'y',
+        side: 'right',
+        titlefont: { size: 18, color: '#1f77b4' },
+        tickfont: { size: 14, color: '#1f77b4' },
+        gridcolor: '#eee',
+        showgrid: false,
+        zeroline: false,
+        autorange: true  // Added to automatically adjust loss range
+    },
+    showlegend: true,
+    legend: {
+        x: 1.1,
+        y: 1,
+        font: { size: 14 },
+        bgcolor: 'rgba(255, 255, 255, 0.9)',
+        bordercolor: '#ccc',
+        borderwidth: 1
+    },
+    plot_bgcolor: 'white',
+    paper_bgcolor: 'white',
+    margin: {
+        l: 80,
+        r: 80,
+        t: 60,
+        b: 60
+    },
+    height: 600,
+    width: null
+});                    // Update metrics
+                    if (data.model1) {
+                        document.getElementById('model1-train-acc').textContent = 
+                            data.model1.train_accuracies[data.model1.train_accuracies.length - 1]?.toFixed(3) + '%' || '-';
+                        document.getElementById('model1-test-acc').textContent = 
+                            data.model1.test_accuracies[data.model1.test_accuracies.length - 1]?.toFixed(3) + '%' || '-';
+                        document.getElementById('model1-loss').textContent = 
+                            data.model1.losses[data.model1.losses.length - 1]?.toFixed(4) || '-';
+                    }
+                    if (data.model2) {
+                        document.getElementById('model2-train-acc').textContent = 
+                            data.model2.train_accuracies[data.model2.train_accuracies.length - 1]?.toFixed(3) + '%' || '-';
+                        document.getElementById('model2-test-acc').textContent = 
+                            data.model2.test_accuracies[data.model2.test_accuracies.length - 1]?.toFixed(3) + '%' || '-';
+                        document.getElementById('model2-loss').textContent = 
+                            data.model2.losses[data.model2.losses.length - 1]?.toFixed(4) || '-';
+                    }
+                });
+        }
+
+        // Update plots every 2 seconds
+        setInterval(updatePlots, 2000);
+        updatePlots();
+    </script>
+</body>
+</html> 
